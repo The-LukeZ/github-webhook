@@ -12,5 +12,6 @@
 		"invocation_logs": true
 	},
 	"compatibility_flags": [ "nodejs_compat" ],
-	"workers_dev": true
+	"workers_dev": true,
+	"preview_urls": false
 }

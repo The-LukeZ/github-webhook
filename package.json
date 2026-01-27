@@ -1,24 +1,25 @@
 {
-	"name": "github-webhook",
-	"version": "0.0.0",
-	"private": true,
-	"scripts": {
-		"build": "wrangler build",
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"test": "vitest",
-		"cf-typegen": "wrangler types"
-	},
-	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.12.4",
-		"@types/node": "^25.0.10",
-		"typescript": "^5.5.2",
-		"vitest": "~3.2.0",
-		"wrangler": "^4.61.0"
-	},
-	"dependencies": {
-		"dayjs": "^1.11.19",
-		"discord-api-types": "^0.38.37"
-	}
+  "name": "github-webhook",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wrangler build",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest",
+    "cf-typegen": "wrangler types",
+    "bulk-env": "wrangler secret bulk .dev.vars"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.4",
+    "@types/node": "^25.0.10",
+    "typescript": "^5.5.2",
+    "vitest": "~3.2.0",
+    "wrangler": "^4.61.0"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.19",
+    "discord-api-types": "^0.38.37"
+  }
 }
