@@ -67,9 +67,6 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
   const branch = p.ref.replace("refs/heads/", "");
   const commitCount = p.commits.length;
   const commitWord = commitCount === 1 ? "commit" : "commits";
-  const message = `[**${p.sender.name || p.sender.login}**](${p.sender.html_url}) pushed ${inlineCode(commitCount.toString())} ${commitWord} to branch ${inlineCode(branch)}.`;
-
-  // commits
 
   const container: APIContainerComponent = {
     type: ComponentType.Container,
@@ -79,7 +76,7 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
         type: ComponentType.TextDisplay,
         content:
           `### [${p.repository.owner.name || p.repository.owner.login}](${p.repository.owner.html_url}) - [${p.repository.name}](${p.repository.html_url})\n` +
-          `-# ${message}`,
+          `-# ${`[**${p.sender.name || p.sender.login}**](${p.sender.html_url}) pushed ${inlineCode(commitCount.toString())} ${commitWord} to ${inlineCode(branch)}.`}`,
       },
       {
         type: ComponentType.Separator,
