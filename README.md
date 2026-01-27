@@ -15,3 +15,5 @@ DISCORD_WEBHOOK_URL=your_discord_webhook_url # Discord webhook URL where message
 WEBHOOK_SECRET=your_github_webhook_secret # for verifying incoming requests - Generate this e.g. here: https://passwords-generator.org/
 REPOSITORY_URL=your_github_repository_url # Will be used to redirect non-POST requests to the repository
 ```
+
+Then run the command `pnpm run bulk-env` to automatically upload the env variables to the worker.
