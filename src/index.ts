@@ -77,7 +77,9 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
     components: [
       {
         type: ComponentType.TextDisplay,
-        content: `**[${p.repository.owner.name || p.repository.owner.login}](${p.repository.owner.html_url}) - [${p.repository.name}](${env.REPOSITORY_URL})**\n-# ${message}`,
+        content:
+          `### [${p.repository.owner.name || p.repository.owner.login}](${p.repository.owner.html_url}) - [${p.repository.name}](${p.repository.html_url})\n` +
+          `-# ${message}`,
       },
       {
         type: ComponentType.Separator,
