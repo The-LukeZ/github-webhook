@@ -52,7 +52,7 @@ async function handlePostRequest(request: Request, env: Env): Promise<Response> 
 
 async function processGithubWebhook(payload: any, env: Env): Promise<Response> {
   const eventType = payload.action;
-  console.log(`Processing event of type: ${eventType}`, payload);
+  console.log("payload recevied", payload);
 
   return new Response(`Processed event of type: ${eventType}`, { status: 200 });
 }
