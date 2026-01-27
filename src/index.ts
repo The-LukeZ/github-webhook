@@ -89,7 +89,7 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
     // display up to 10 commits
     const commitComponents: APITextDisplayComponent[] = p.commits.slice(0, 10).map((commit) => ({
       type: ComponentType.TextDisplay,
-      content: `- [${commit.id.substring(0, 7)}](${commit.url}) ${commit.author.name}: ${commit.message.split("\n")[0].slice(0, 200)}`,
+      content: `- [${inlineCode(commit.id.substring(0, 7))}](${commit.url}) ${commit.author.name}: ${commit.message.split("\n")[0].slice(0, 200)}`,
     }));
 
     container.components.push(...commitComponents);
