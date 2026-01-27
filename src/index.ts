@@ -113,7 +113,7 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
       {
         type: ComponentType.Button,
         style: 5,
-        url: env.REPOSITORY_URL,
+        url: p.repository.html_url,
         label: "View Repository",
       },
       {
