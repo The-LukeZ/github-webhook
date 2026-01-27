@@ -1,4 +1,14 @@
 import crypto from "node:crypto";
+import type { GitHubPushEvent } from "./types";
+import {
+  APIActionRowComponent,
+  APIComponentInMessageActionRow,
+  APIContainerComponent,
+  APITextDisplayComponent,
+  ComponentType,
+  MessageFlags,
+  RESTPostAPIWebhookWithTokenJSONBody,
+} from "discord-api-types/v10";
 
 const redirect = (url: string) => {
   return new Response(null, {
@@ -50,9 +60,82 @@ async function handlePostRequest(request: Request, env: Env): Promise<Response> 
   return processGithubWebhook(jsonPayload, env);
 }
 
-async function processGithubWebhook(payload: any, env: Env): Promise<Response> {
-  const eventType = payload.action;
-  console.log("payload recevied", payload);
+const inlineCode = (text: string) => `\`${text}\`` as const;
 
-  return new Response(`Processed event of type: ${eventType}`, { status: 200 });
+async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Response> {
+  const branch = p.ref.replace("refs/heads/", "");
+  const commitCount = p.commits.length;
+  const commitWord = commitCount === 1 ? "commit" : "commits";
+  const message = `[**${p.sender.name}**](${p.sender.html_url}) pushed ${inlineCode(commitCount.toString())} ${commitWord} to branch ${inlineCode(branch)}.`;
+
+  // commits
+
+  const container: APIContainerComponent = {
+    type: ComponentType.Container,
+    accent_color: 0x6e5494,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content: `-# [${p.repository.owner.name}](${p.repository.owner.html_url}) - [${p.repository.name}](${env.REPOSITORY_URL})\n-# ${message}`,
+      },
+      {
+        type: ComponentType.Separator,
+      },
+    ],
+  };
+
+  if (p.commits.length > 0) {
+    // display up to 10 commits
+    const commitComponents: APITextDisplayComponent[] = p.commits.slice(0, 10).map((commit) => ({
+      type: ComponentType.TextDisplay,
+      content: `- [${commit.id.substring(0, 7)}](${commit.url}) ${commit.author.name}: ${commit.message.split("\n")[0].slice(0, 200)}`,
+    }));
+
+    container.components.push(...commitComponents);
+
+    if (p.commits.length > 10) {
+      container.components.push({
+        type: ComponentType.TextDisplay,
+        content: `and ${p.commits.length - 10} more commits...`,
+      });
+    }
+  } else {
+    container.components.push({
+      type: ComponentType.TextDisplay,
+      content: "_No commits in this push. (How did this happen?)_",
+    });
+  }
+
+  const ar: APIActionRowComponent<APIComponentInMessageActionRow> = {
+    type: ComponentType.ActionRow,
+    components: [
+      {
+        type: ComponentType.Button,
+        style: 5,
+        url: env.REPOSITORY_URL,
+        label: "View Repository",
+      },
+      {
+        type: ComponentType.Button,
+        style: 5,
+        url: p.compare,
+        label: "View Changes",
+      },
+    ],
+  };
+
+  await fetch(env.DISCORD_WEBHOOK_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      flags: MessageFlags.IsComponentsV2,
+      components: [container, ar],
+      username: "GitHub",
+      avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+    } satisfies RESTPostAPIWebhookWithTokenJSONBody),
+  });
+
+  return new Response("Webhook processed", { status: 200 });
 }

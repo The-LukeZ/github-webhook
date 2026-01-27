@@ -38,7 +38,8 @@
 		"skipLibCheck": true,
 		"types": [
 			"./worker-configuration.d.ts",
-			"@types/node"
+			"@types/node",
+			"./src/types.d.ts"
 		]
 	},
 	"exclude": [ "test" ],
