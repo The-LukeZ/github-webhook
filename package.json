@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "wrangler build",
-    "deploy": "wrangler deploy",
+    "deploy": "wrangler deploy --minify",
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "test": "vitest",
