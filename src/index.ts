@@ -126,7 +126,7 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
   };
 
   try {
-    await fetch(env.DISCORD_WEBHOOK_URL, {
+    await fetch(env.DISCORD_WEBHOOK_URL + "?with_components=true", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
