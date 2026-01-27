@@ -9,6 +9,7 @@ import {
   MessageFlags,
   RESTPostAPIWebhookWithTokenJSONBody,
 } from "discord-api-types/v10";
+import { inspect } from "node:util";
 
 const redirect = (url: string) => {
   return new Response(null, {
@@ -124,18 +125,24 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
     ],
   };
 
-  await fetch(env.DISCORD_WEBHOOK_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      flags: MessageFlags.IsComponentsV2,
-      components: [container, ar],
-      username: "GitHub",
-      avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-    } satisfies RESTPostAPIWebhookWithTokenJSONBody),
-  });
+  try {
+    await fetch(env.DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        flags: MessageFlags.IsComponentsV2,
+        components: [container, ar],
+        username: "GitHub",
+        avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+      } satisfies RESTPostAPIWebhookWithTokenJSONBody),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (error) {
+    console.error("Error sending message to Discord:", { error: inspect(error) });
+    return new Response("Error sending message to Discord", { status: 500 });
+  }
 
   return new Response("Webhook processed", { status: 200 });
 }
