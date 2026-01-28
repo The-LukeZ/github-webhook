@@ -48,3 +48,5 @@ REPOSITORY_URL=your_github_repository_url # Will be used to redirect non-POST re
 ```
 
 Then run the command `pnpm run bulk-env` to automatically upload the env variables to the worker.
+
+`.dev.vars` is a convention used by `wrangler` to load environment variables during development. It is excluded from version control by default.
