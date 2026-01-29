@@ -75,8 +75,12 @@ export const webhookRoutes: WebhookRoutes = {
 ```
 
 Then configure your GitHub webhooks to point to:
+
 - `https://your-worker.workers.dev/` (uses DISCORD_WEBHOOK_DEFAULT)
 - `https://your-worker.workers.dev/project1` (uses DISCORD_WEBHOOK_PROJECT1)
 - `https://your-worker.workers.dev/project2` (uses DISCORD_WEBHOOK_PROJECT2)
 
 If a subpath isn't configured, it will fall back to the default "/" route.
+
+> [!IMPORTANT]
+> You don't have to name the env vars exactly as shown. Just ensure the names in `config.ts` match those in your `.dev.vars` file - which should be set in your worker with the `pnpm run bulk-env` command again.
