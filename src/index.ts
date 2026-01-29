@@ -1,14 +1,14 @@
 import crypto from "node:crypto";
 import type { GitHubPushEvent } from "./types";
-import {
+import { getWebhookConfig } from "./config";
+import type {
   APIActionRowComponent,
   APIComponentInMessageActionRow,
   APIContainerComponent,
   APITextDisplayComponent,
-  ComponentType,
-  MessageFlags,
   RESTPostAPIWebhookWithTokenJSONBody,
 } from "discord-api-types/v10";
+import { ComponentType, MessageFlags } from "discord-api-types/v10";
 import { inspect } from "node:util";
 
 const redirect = (url: string) => {
@@ -30,14 +30,17 @@ function verifySignature(payload: string, signature: string, secret: string): bo
 
 export default {
   async fetch(request, env, ctx): Promise<Response> {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
     if (request.method !== "POST") {
       return redirect(env.REPOSITORY_URL);
     }
-    return handlePostRequest(request, env);
+    return handlePostRequest(request, env, path);
   },
 } satisfies ExportedHandler<Env>;
 
-async function handlePostRequest(request: Request, env: Env): Promise<Response> {
+async function handlePostRequest(request: Request, env: Env, path: string): Promise<Response> {
   const signature = request.headers.get("X-Hub-Signature-256");
   const secret = env.WEBHOOK_SECRET;
 
@@ -50,6 +53,13 @@ async function handlePostRequest(request: Request, env: Env): Promise<Response> 
   if (!verifySignature(payload, signature, secret)) {
     return new Response("Forbidden", { status: 403 });
   }
+
+  const discordWebhookUrl = getWebhookConfig(path, env);
+  if (!discordWebhookUrl) {
+    console.error(`No webhook configuration found for path: ${path}`);
+    return new Response("Webhook not configured for this path", { status: 404 });
+  }
+
   const jsonPayload = JSON.parse(payload);
   const githubEvent = request.headers.get("x-github-event");
   if (githubEvent === "ping") {
@@ -57,13 +67,13 @@ async function handlePostRequest(request: Request, env: Env): Promise<Response> 
   } else if (githubEvent !== "push") {
     return new Response(`Event ${githubEvent} not handled`, { status: 200 });
   }
-  console.log(`Received push event with ID ${request.headers.get("x-github-delivery")}`);
-  return processGithubWebhook(jsonPayload, env);
+  console.log(`Received push event with ID ${request.headers.get("x-github-delivery")} for path ${path}`);
+  return processGithubWebhook(jsonPayload, discordWebhookUrl);
 }
 
 const inlineCode = (text: string) => `\`${text}\`` as const;
 
-async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Response> {
+async function processGithubWebhook(p: GitHubPushEvent, discordWebhookUrl: string): Promise<Response> {
   const branch = p.ref.replace("refs/heads/", "");
   const commitCount = p.commits.length;
   const commitWord = commitCount === 1 ? "commit" : "commits";
@@ -125,7 +135,7 @@ async function processGithubWebhook(p: GitHubPushEvent, env: Env): Promise<Respo
   };
 
   try {
-    await fetch(env.DISCORD_WEBHOOK_URL + "?with_components=true", {
+    await fetch(discordWebhookUrl + "?with_components=true", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
