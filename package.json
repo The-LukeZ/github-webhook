@@ -18,5 +18,6 @@
   },
   "dependencies": {
     "discord-api-types": "^0.38.37"
-  }
+  },
+  "packageManager": "pnpm@10.28.2"
 }
