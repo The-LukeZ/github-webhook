@@ -17,7 +17,7 @@ export interface WebhookRoutes {
  * DISCORD_WEBHOOK_PROJECT1=https://discord.com/api/webhooks/...
  * DISCORD_WEBHOOK_PROJECT2=https://discord.com/api/webhooks/...
  * WEBHOOK_SECRET=your_secret
- * REPOSITORY_URL=https://github.com/user/repo
+ * REDIRECT_URL=https://github.com/user/repo
  * ```
  */
 export const webhookRoutes: WebhookRoutes = {
