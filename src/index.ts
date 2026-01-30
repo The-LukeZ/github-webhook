@@ -1,15 +1,9 @@
 import crypto from "node:crypto";
 import type { GitHubPushEvent } from "./types";
 import { getWebhookConfig } from "./config";
-import type {
-  APIActionRowComponent,
-  APIComponentInMessageActionRow,
-  APIContainerComponent,
-  APITextDisplayComponent,
-  RESTPostAPIWebhookWithTokenJSONBody,
-} from "discord-api-types/v10";
-import { ComponentType, MessageFlags } from "discord-api-types/v10";
+import type { RESTPostAPIWebhookWithTokenJSONBody } from "discord-api-types/v10";
 import { inspect } from "node:util";
+import { buildTagActionMessage, buildBranchActionMessage, buildCommitPushMessage } from "./messages";
 
 const redirect = (url: string) => {
   return new Response(null, {
@@ -34,7 +28,7 @@ export default {
     const path = url.pathname;
 
     if (request.method !== "POST") {
-      return redirect(env.REPOSITORY_URL);
+      return redirect(env.REDIRECT_URL);
     }
     return handlePostRequest(request, env, path);
   },
@@ -67,72 +61,100 @@ async function handlePostRequest(request: Request, env: Env, path: string): Prom
   } else if (githubEvent !== "push") {
     return new Response(`Event ${githubEvent} not handled`, { status: 200 });
   }
+  console.log(`Processing GitHub event ${githubEvent} for path ${path}`);
   console.log(`Received push event with ID ${request.headers.get("x-github-delivery")} for path ${path}`);
   return processGithubWebhook(jsonPayload, discordWebhookUrl);
 }
 
-const inlineCode = (text: string) => `\`${text}\`` as const;
+type ContextDetails = {
+  name: string;
+} & (
+  | {
+      type: "branch";
+      action: "created" | "deleted" | "updated";
+    }
+  | {
+      type: "tag";
+      action: "created" | "deleted";
+    }
+);
+
+const nullField = "0000000000000000000000000000000000000000";
+
+function getContext(payload: GitHubPushEvent): ContextDetails | null {
+  const ref = payload.ref;
+  let action: ContextDetails["action"];
+  if (payload.before === nullField && payload.after !== nullField) {
+    action = "created";
+  } else if (payload.after === nullField && payload.before !== nullField) {
+    action = "deleted";
+  } else {
+    action = "updated";
+  }
+  if (ref.startsWith("refs/heads/")) {
+    // it's a branch
+    return {
+      type: "branch",
+      name: ref.replace("refs/heads/", ""),
+      action: action,
+    };
+  } else if (ref.startsWith("refs/tags/")) {
+    // it's a tag
+    return {
+      type: "tag",
+      name: ref.replace("refs/tags/", ""),
+      action: action as "created" | "deleted", // tags can't be updated
+    };
+  }
+  return null;
+}
 
 async function processGithubWebhook(p: GitHubPushEvent, discordWebhookUrl: string): Promise<Response> {
-  const branch = p.ref.replace("refs/heads/", "");
-  const commitCount = p.commits.length;
-  const commitWord = commitCount === 1 ? "commit" : "commits";
-
-  const container: APIContainerComponent = {
-    type: ComponentType.Container,
-    accent_color: 0x6e5494,
-    components: [
-      {
-        type: ComponentType.TextDisplay,
-        content:
-          `### [${p.repository.owner.name || p.repository.owner.login}](${p.repository.owner.html_url}) - [${p.repository.name}](${p.repository.html_url})\n` +
-          `-# ${`[**${p.sender.name || p.sender.login}**](${p.sender.html_url}) pushed ${inlineCode(commitCount.toString())} ${commitWord} to ${inlineCode(branch)}.`}`,
-      },
-      {
-        type: ComponentType.Separator,
-      },
-    ],
-  };
-
-  if (p.commits.length > 0) {
-    // display up to 10 commits
-    const commitComponents: APITextDisplayComponent[] = p.commits.slice(0, 10).map((commit) => ({
-      type: ComponentType.TextDisplay,
-      content: `- [${inlineCode(commit.id.substring(0, 7))}](${commit.url}) ${commit.author.name}: ${commit.message.split("\n")[0].slice(0, 200)}`,
-    }));
-
-    container.components.push(...commitComponents);
-
-    if (p.commits.length > 10) {
-      container.components.push({
-        type: ComponentType.TextDisplay,
-        content: `and ${p.commits.length - 10} more commits...`,
-      });
-    }
-  } else {
-    container.components.push({
-      type: ComponentType.TextDisplay,
-      content: "_No commits in this push. (How did this happen?)_",
-    });
+  const context = getContext(p);
+  if (!context) {
+    // Should not happen
+    console.error("Could not determine context from ref:", p.ref);
+    return new Response("Could not determine context from ref", { status: 400 });
   }
 
-  const ar: APIActionRowComponent<APIComponentInMessageActionRow> = {
-    type: ComponentType.ActionRow,
-    components: [
-      {
-        type: ComponentType.Button,
-        style: 5,
-        url: p.repository.html_url,
-        label: "View Repository",
-      },
-      {
-        type: ComponentType.Button,
-        style: 5,
-        url: p.compare,
-        label: "View Changes",
-      },
-    ],
-  };
+  let payload: RESTPostAPIWebhookWithTokenJSONBody;
+  if (context.type === "tag") {
+    payload = buildTagActionMessage(
+      context.action,
+      p.repository.owner.name || p.repository.owner.login,
+      p.repository.owner.html_url,
+      p.repository.name,
+      p.repository.html_url,
+      p.sender.name || p.sender.login,
+      p.sender.html_url,
+      context.name,
+      `${p.repository.html_url}/releases/tag/${context.name}`
+    );
+  } else if (context.type === "branch" && context.action !== "updated") {
+    payload = buildBranchActionMessage(
+      context.action,
+      p.repository.owner.name || p.repository.owner.login,
+      p.repository.owner.html_url,
+      p.repository.name,
+      p.repository.html_url,
+      p.sender.name || p.sender.login,
+      p.sender.html_url,
+      context.name,
+      `${p.repository.html_url}/tree/${context.name}`
+    );
+  } else {
+    payload = buildCommitPushMessage(
+      p.repository.owner.name || p.repository.owner.login,
+      p.repository.owner.html_url,
+      p.repository.name,
+      p.repository.html_url,
+      p.compare,
+      p.sender.name || p.sender.login,
+      p.sender.html_url,
+      p.commits,
+      context.name
+    );
+  }
 
   try {
     await fetch(discordWebhookUrl + "?with_components=true", {
@@ -140,12 +162,7 @@ async function processGithubWebhook(p: GitHubPushEvent, discordWebhookUrl: strin
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        flags: MessageFlags.IsComponentsV2,
-        components: [container, ar],
-        username: "GitHub",
-        avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-      } satisfies RESTPostAPIWebhookWithTokenJSONBody),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(5000),
     });
   } catch (error) {
