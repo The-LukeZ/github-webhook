@@ -46,7 +46,7 @@ export function buildBranchActionMessage(
     components: [
       TextDisplay(
         `### [${ownerNameOrLogin}](${ownerHtmlUrl}) - [${repoName}](${repoHtmlUrl})`,
-        `[**${senderNameOrLogin}**](${senderHtmlUrl}) ${action} branch [${subtext(branchName)}].`
+        `[**${senderNameOrLogin}**](${senderHtmlUrl}) ${action} branch [${subtext(branchName)}](${branchHtmlUrl}).`
       ),
     ],
   };
@@ -158,7 +158,7 @@ export function buildTagActionMessage(
     components: [
       TextDisplay(
         `### [${ownerNameOrLogin}](${ownerHtmlUrl}) - [${repoName}](${repoHtmlUrl})`,
-        `[**${senderNameOrLogin}**](${senderHtmlUrl}) ${action} tag [${subtext(tagName)}].`
+        `[**${senderNameOrLogin}**](${senderHtmlUrl}) ${action} tag [${subtext(tagName)}](${tagHtmlUrl}).`
       ),
     ],
   };
