@@ -6,7 +6,7 @@ declare namespace Cloudflare {
 		mainModule: typeof import("./src/index");
 	}
 	interface Env {
-		REPOSITORY_URL: string;
+		REDIRECT_URL: string;
 		WEBHOOK_SECRET: string;
 		DISCORD_WEBHOOK_URL: string;
 	}
@@ -16,7 +16,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "REPOSITORY_URL" | "WEBHOOK_SECRET" | "DISCORD_WEBHOOK_URL">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "REDIRECT_URL" | "WEBHOOK_SECRET" | "DISCORD_WEBHOOK_URL">> {}
 }
 
 // Begin runtime types

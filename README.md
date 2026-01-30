@@ -44,7 +44,7 @@ Make a `.dev.vars` file in the root directory with the following variables:
 ```bash
 # Required variables
 WEBHOOK_SECRET=your_github_webhook_secret # for verifying incoming requests - Generate this e.g. here: https://passwords-generator.org/
-REPOSITORY_URL=your_github_repository_url # Will be used to redirect non-POST requests to the repository
+REDIRECT_URL=your_github_REDIRECT_URL # Will be used to redirect non-POST requests
 
 # Discord webhook URLs - you can add as many as you need
 DISCORD_WEBHOOK_URL=your_default_discord_webhook_url # Default webhook for "/" route
