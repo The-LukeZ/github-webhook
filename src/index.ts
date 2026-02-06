@@ -29,7 +29,9 @@ export default {
 
     if (request.method !== "POST") {
       if (!env.REDIRECT_URL) {
-        console.warn("Received non-POST request but no REDIRECT_URL is configured. redirecting to default GitHub repository.");
+        console.warn(
+          "Received non-POST request but no REDIRECT_URL is configured. redirecting to default GitHub repository."
+        );
       }
       return redirect(env.REDIRECT_URL || "https://github.com/The-LukeZ/github-webhook/");
     }
